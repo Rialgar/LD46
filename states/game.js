@@ -7,14 +7,14 @@ const Game = {
             usingKeyBoard: false,
             player: {
                 position: {
-                    x:0, y:0
+                    x:0, y:-100
                 },
                 movement: {
                     x:0, y:0
                 },
                 aim: 0,
                 speed: 500
-            },
+            },            
             camera: {
                 position: {
                     x:0, y:0
@@ -23,14 +23,22 @@ const Game = {
             bulletSpeed: 1000,
             bulletSpacing: 0.1,
             bulletTimeout: 0,
-            bullets: []
+            bullets: [],
+            prize: {
+                position: {
+                    x:0,
+                    y:0                    
+                },
+                health: 60                
+            }
         }
 
         window.__debug = {game: this};
-    },  
-    resize: function() { },
+    },
 
     step: function(dt) {
+        const healthScale = 1;
+
         this.checkKeysAndButtons();
         this.checkMousePos();
         this.updateBullets(dt);
@@ -38,39 +46,36 @@ const Game = {
         if(this.data.bulletTimeout >= 0){
             this.data.bulletTimeout -= dt;
         }
+        this.data.prize.health -= dt * healthScale;
+        if(this.data.prize.health < 0){
+            this.app.loose();
+        }
     },
+
     render: function(dt) {
         const ctx = this.app.layer.context;
         ctx.fillStyle = 'black';
         ctx.fillRect(0,0,this.app.width, this.app.height);
         
-        const transformBefore = ctx.getTransform();
+        ctx.save();
 
         const {x, y} = this.data.camera.position;
 
         ctx.translate(Math.floor(x + this.app.width/2), Math.floor(y + this.app.height/2));
 
-        this.drawPlayer(ctx);
         this.drawBullets(ctx);
+        this.drawPlayer(ctx);
+        this.drawPrize(ctx);
 
-        ctx.setTransform(transformBefore);
+        ctx.restore();
     },
   
     keydown: function(data) { },
     keyup: function(data) { },
   
-    pointerdown: function(data) { },
-    pointerup: function(data) { },
-    pointermove: function(data) { },
-    pointerwheel: function(data) { },
-  
     mousedown: function(data) { },
     mouseup: function(data) { },
     mousemove: function(data) { },
-  
-    touchstart: function(data) { },
-    touchend: function(data) { },
-    touchmove: function(data) { },
   
     gamepaddown: function(data) { },
     gamepadhold: function(data) { },
@@ -166,7 +171,7 @@ const Game = {
         const aimLength = 15;
         const aimWidth = Math.PI / 10;
 
-        const transformBefore = ctx.getTransform();
+        ctx.save();
         ctx.translate(Math.round(x), Math.round(y));
 
         ctx.beginPath();
@@ -174,7 +179,6 @@ const Game = {
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
-
         
         ctx.rotate(this.data.player.aim);
 
@@ -185,7 +189,7 @@ const Game = {
         ctx.fill();
         ctx.stroke();
 
-        ctx.setTransform(transformBefore);
+        ctx.restore();
     },
     
     spawnBullets: function(){
@@ -203,7 +207,7 @@ const Game = {
                 aim,
                 age: 0
             }
-            this.updateMovable(bullet, -this.data.bulletTimeout);
+            this.updateMovable(bullet, -this.data.bulletTimeout + 20/this.data.bulletSpeed);
             this.data.bullets.push(bullet);            
             this.data.bulletTimeout += this.data.bulletSpacing;
         }
@@ -231,6 +235,49 @@ const Game = {
             ctx.closePath();
             ctx.fill();
         } );
+    },
+
+    drawPrize: function(ctx){
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 4;
+
+        const {x, y} = this.data.prize.position;
+
+        ctx.save();
+        ctx.translate(Math.round(x), Math.round(y));
+        ctx.save();
+
+        ctx.beginPath();
+        ctx.arc(0, 0, 30, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.fill();
+        ctx.clip();
+        ctx.fillStyle = 'green';
+        ctx.fillRect(-30, 30 - this.data.prize.health, 60, 60);        
+        ctx.restore();
+
+        ctx.beginPath();
+        ctx.arc(0, 0, 30, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(0, 0, 20, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(0, 0, 11, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(0, 0, 2, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.stroke();
+
+        ctx.restore();
     }
 }
 
