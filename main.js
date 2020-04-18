@@ -5,11 +5,9 @@ import Game from './states/game.js';
 var app = playground({
     preload: function() { },  
     create: function() { 
-        console.log('app create');
         this.layer.canvas.id = 'game';
     },  
     ready: function() {
-        console.log('app ready');
         this.setState(Game);
     },
     resize: function() { },
