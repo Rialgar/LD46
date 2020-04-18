@@ -4,18 +4,18 @@ import Game from './states/game.js';
 import TextState from './states/text.js'
 
 const Help = TextState([
-    "Move - WASD or Left Stick",
+    "Move - WASD/Arrows or Left Stick",
     "Aim - Mouse or Right Stick",
     "Shoot - Left Mouse or Right Trigger",
     "",
-    "Press any key or gamepad button", "to continue."
+    "Press enter, space or start", "to continue."
 ], 'start');
 
 const Start = TextState([
     "Keep the target thingy alive!",
     "Protect and feed it!",
     "",
-    "Press any key or gamepad button", "to start.",
+    "Press enter, space or start", "to start.",
     "",
     "F1 anytime for controls."
 ], 'start');
@@ -23,20 +23,20 @@ const Start = TextState([
 const Lost = TextState([
     "Aw, you lost.",
     "",
-    "Press any key or gamepad button", "to restart."
+    "Press enter, space or start", "to restart."
 ], 'restart');
 
 const Won = TextState([
     "Yay, you won!",
     "",
-    "Press any key or gamepad button", "to restart."
+    "Press enter, space or start", "to restart."
 ], 'restart');
 
 const app = playground({
-    preload: function() { },  
-    create: function() { 
+    preload: function() { },
+    create: function() {
         this.layer.canvas.id = 'game';
-    },  
+    },
     ready: function() {
         this.setState(Start)
     },
@@ -51,11 +51,15 @@ const app = playground({
 
     keydown: function(data) {
         if( data.key === "f1"){
-            this.setState(Help);
+            this.help();
         }
     },
 
     //custom functions
+
+    help: function(){
+        this.setState(Help);
+    },
 
     loose: function(){
         this.setState(Lost);

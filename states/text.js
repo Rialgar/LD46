@@ -9,20 +9,22 @@ const TextState = (lines, funcName) => ({
         ctx.fillRect(0, 0, this.app.width, this.app.height);
         this.drawText(ctx);
     },
-  
+
     keydown: function(data) {
-        if(!data.key.startsWith('mouse') && data.key != "f1"){
-            this.app[funcName]();            
+        if(data.key === "enter" || data.key === "space"){
+            this.app[funcName]();
         }
     },
     keyup: function(data) { },
-  
+
     mousedown: function(data) { },
     mouseup: function(data) { },
     mousemove: function(data) { },
-  
+
     gamepaddown: function(data) {
-        this.app.restart();
+        if(data.button === "start") {
+            this.app[funcName]();
+        };
     },
     gamepadhold: function(data) { },
     gamepadup: function(data) { },
@@ -36,10 +38,10 @@ const TextState = (lines, funcName) => ({
 
         lines.forEach((line, index) => {
             const top = this.app.height/2 - totalHeight/2 + index*lineHeight;
-            
+
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
-            ctx.fillStyle = 'white'; 
+            ctx.fillStyle = 'white';
             ctx.font = `${fontSize}px 'Press Start 2P', cursive`;
             ctx.fillText(line, center, top);
         });

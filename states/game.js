@@ -1,7 +1,10 @@
 import Enemy from '../Enemy.js';
+import '../utils/partition.js';
+
+import * as vector from '../utils/vectors.js';
 
 const sqrt05 = Math.sqrt(0.5);
-const waves = [
+/*const waves = [
     [
         Enemy.Small, Enemy.Small, 2,
         Enemy.Small, Enemy.Small, Enemy.Small, Enemy.Small
@@ -11,11 +14,11 @@ const waves = [
         Enemy.Medium, Enemy.Medium, Enemy.Small, Enemy.Small
     ],
     [
-        Enemy.Big, Enemy.Big, 2, 
+        Enemy.Big, Enemy.Big, 2,
         Enemy.Medium, Enemy.Big, Enemy.Big, Enemy.Small, Enemy.Small
     ],
     [
-        Enemy.Big, Enemy.Big, Enemy.Big, 2, 
+        Enemy.Big, Enemy.Big, Enemy.Big, 2,
         Enemy.Medium, Enemy.Medium, Enemy.Medium, Enemy.Medium, Enemy.Small, Enemy.Small, Enemy.Small, Enemy.Small
     ],
     [
@@ -32,11 +35,12 @@ const waves = [
         Enemy.Small, Enemy.Small, 2,
         Enemy.Small, Enemy.Small, 2,
         Enemy.Small, Enemy.Small]
-];
+];*/
+const waves = [[Enemy.Boss1], [Enemy.Boss1]];
 const spawnDistance = 1000;
 
 const Game = {
-    create: function() { 
+    create: function() {
         this.data = {
             usingGamePad: false,
             usingKeyBoard: false,
@@ -48,8 +52,9 @@ const Game = {
                     x:0, y:0
                 },
                 aim: 0,
-                speed: 500
-            },            
+                speed: 500,
+                food: 0
+            },
             camera: {
                 position: {
                     x:0, y:0
@@ -62,17 +67,19 @@ const Game = {
             prize: {
                 position: {
                     x:0,
-                    y:0                    
+                    y:0
                 },
-                health: 60                
+                health: 60
             },
             enemies: [],
+            drops: [],
             nextWave: 0,
             currentWave: {
                 index: 0,
                 finished: true,
-                enemyIndex: 0                
-            }
+                enemyIndex: 0
+            },
+            winTimeout: 5
         }
 
         window.__debug = {game: this};
@@ -82,10 +89,11 @@ const Game = {
         const healthScale = 1;
 
         this.checkKeysAndButtons();
-        this.checkMousePos();        
+        this.checkMousePos();
         this.updatePlayer(dt);
         this.updateEnemies(dt);
         this.updateBullets(dt);
+        this.updateDrops(dt);
 
         if(this.data.bulletTimeout >= 0){
             this.data.bulletTimeout -= dt;
@@ -94,15 +102,16 @@ const Game = {
         if(this.data.prize.health < 0){
             this.app.loose();
             return;
-        }        
+        }
 
         if(this.data.enemies.length == 0 && this.data.currentWave.finished){
-            console.log(waves.length, this.data.nextWave);
             if(waves.length > this.data.nextWave) {
                 this.spawnWave(this.data.nextWave);
                 this.data.nextWave++;
-            } else {
+            } else if(this.data.winTimeout <= 0){
                 this.app.win();
+            } else {
+                this.data.winTimeout -= dt;
             }
         }
         this.updateWave(dt);
@@ -112,7 +121,7 @@ const Game = {
         const ctx = this.app.layer.context;
         ctx.fillStyle = 'black';
         ctx.fillRect(0,0,this.app.width, this.app.height);
-        
+
         ctx.save();
 
         const {x, y} = this.data.camera.position;
@@ -122,19 +131,28 @@ const Game = {
         this.drawPrize(ctx);
         this.drawEnemies(ctx);
         this.drawBullets(ctx);
-        this.drawPlayer(ctx);        
+        this.drawDrops(ctx);
+        this.drawPlayer(ctx);
 
         ctx.restore();
     },
-  
-    keydown: function(data) { },
+
+    keydown: function(data) {
+        if(data.key === "enter"){
+            this.app.help();
+        }
+    },
     keyup: function(data) { },
-  
+
     mousedown: function(data) { },
     mouseup: function(data) { },
     mousemove: function(data) { },
-  
-    gamepaddown: function(data) { },
+
+    gamepaddown: function(data) {
+        if(data.button === "start"){
+            this.app.help();
+        }
+    },
     gamepadhold: function(data) { },
     gamepadup: function(data) { },
 
@@ -164,7 +182,7 @@ const Game = {
     //custom functions
     checkKeysAndButtons: function(){
         if(this.data.usingGamePad){
-            this.data.usingKeyBoard = false;            
+            this.data.usingKeyBoard = false;
         } else {
             if(this.app.keyboard.any || this.app.mouse.left){
                 this.data.usingKeyBoard = true;
@@ -187,11 +205,11 @@ const Game = {
                 y *= sqrt05;
             }
             this.data.player.movement = {x, y};
-            if(this.app.mouse.left){
+            if(this.app.mouse.left || this.app.keyboard.keys.space){
                 this.spawnBullets();
             }
         }
-      
+
         if(!this.data.usingKeyBoard && this.app.gamepads[0]){
             if(this.app.gamepads[0].buttons.r2){
                 this.spawnBullets();
@@ -209,12 +227,17 @@ const Game = {
     },
 
     updateMovable: function({position, movement, speed}, dt){
-        position.x += movement.x * speed * dt;
-        position.y += movement.y * speed * dt;
+        vector.addInPlace(position, vector.scale(movement, speed*dt));
     },
 
     updatePlayer: function(dt) {
         this.updateMovable(this.data.player, dt);
+        const dist = vector.distance(this.data.player.position, this.data.prize.position);
+        if(dist < 30){
+            const delta = Math.min(60 - this.data.prize.health, this.data.player.food)
+            this.data.prize.health += delta;
+            this.data.player.food -= delta;
+        }
     },
 
     drawPlayer: function(ctx){
@@ -235,10 +258,21 @@ const Game = {
         ctx.arc(0, 0, radius, 0, 2 * Math.PI);
         ctx.closePath();
         ctx.fill();
+
+        ctx.fillStyle = 'green';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * this.data.player.food / 30, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, 2 * Math.PI);
+        ctx.closePath();
         ctx.stroke();
-        
+
         ctx.rotate(this.data.player.aim);
 
+        ctx.fillStyle = 'black';
         ctx.beginPath();
         ctx.arc(0, 0, radius + aimDist, -aimWidth, aimWidth);
         ctx.lineTo(radius + aimDist + aimLength, 0);
@@ -248,14 +282,14 @@ const Game = {
 
         ctx.restore();
     },
-    
+
     spawnBullets: function(){
-        const {position: {x, y}, aim} = this.data.player;
+        const {position, aim} = this.data.player;
 
         let count = 0;
         while(this.data.bulletTimeout <= 0){
             const bullet = {
-                position: {x, y},
+                position: {... position},
                 movement: {
                     x: Math.cos(aim),
                     y: Math.sin(aim)
@@ -266,7 +300,7 @@ const Game = {
                 hasHit: false
             }
             this.updateMovable(bullet, -this.data.bulletTimeout + 20/this.data.bulletSpeed);
-            this.data.bullets.push(bullet);            
+            this.data.bullets.push(bullet);
             this.data.bulletTimeout += this.data.bulletSpacing;
         }
     },
@@ -336,7 +370,9 @@ const Game = {
 
     updateEnemies: function(dt){
         this.data.enemies.forEach(enemy => enemy.update(dt, this.data.prize, this.data.bullets));
-        this.data.enemies = this.data.enemies.filter(enemy => enemy.alive);
+        const [alive, dead] = this.data.enemies.partition(enemy => enemy.alive);
+        this.data.enemies = alive;
+        dead.forEach(enemy => this.spawnDrops(enemy));
     },
 
     drawEnemies: function(ctx){
@@ -360,13 +396,12 @@ const Game = {
                 const x = Math.sin(angle) * spawnDistance;
                 const y = Math.cos(angle) * spawnDistance;
 
-                console.log(x, y);
                 this.data.enemies.push(new Enemy({... spec, x, y}));
 
                 this.data.currentWave.enemyIndex++;
                 spec = waves[this.data.currentWave.index][this.data.currentWave.enemyIndex];
             }
-            if(typeof spec === 'number'){                
+            if(typeof spec === 'number'){
                 this.data.currentWave.timeout = spec;
                 this.data.currentWave.enemyIndex++;
             } else {
@@ -375,7 +410,55 @@ const Game = {
         } else {
             this.data.currentWave.timeout -= dt;
         }
-    }
+    },
+
+    spawnDrops: function({position, drops}){
+        for(let i = 0; i < drops; i++){
+            const drop = {
+                position: {... position},
+                movement: {},
+                speed: 1,
+                collected: false
+            }
+            const angle = Math.random() * Math.PI * 2;
+            drop.movement = vector.scaleInPlace({
+                x: Math.sin(angle),
+                y: Math.cos(angle)
+            }, Math.random() * 10 * Math.min(200, drops));
+            this.data.drops.push(drop)
+        }
+    },
+
+    updateDrops: function(dt){
+        this.data.drops.forEach(drop => {
+            this.updateMovable(drop, dt);
+            vector.scaleInPlace(drop.movement, Math.max(0, 1-5*dt));
+
+            const diff = vector.difference(this.data.player.position, drop.position);
+            const dist = vector.length(diff);
+            if(this.data.player.food < 30){
+                if(dist <= 22){
+                    drop.collected = true;
+                    this.data.player.food += 0.2;
+                } else if(dist < 100){
+                    vector.addInPlace(drop.movement, vector.scale(diff, dt * 300000 / dist / dist));
+                }
+            }
+
+        });
+        this.data.drops = this.data.drops.filter(drop => !drop.collected);
+    },
+
+    drawDrops: function(ctx){
+        this.data.drops.forEach(drop => {
+            ctx.fillStyle = 'green';
+
+            ctx.beginPath();
+            ctx.arc(drop.position.x, drop.position.y, 5, 0, 2 * Math.PI);
+            ctx.closePath();
+            ctx.fill();
+        });
+    },
 }
 
 export default Game;
