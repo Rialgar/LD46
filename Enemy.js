@@ -11,6 +11,7 @@ export default class Enemy {
         this.dmg = dmg;
         this.color = color;
         this.drops = 0;
+        this.corpse = [];
     }
 
     update(dt, prize, bullets){
@@ -23,6 +24,7 @@ export default class Enemy {
             this.alive = false;
             const r = Math.random() * Math.random();
             this.drops = Math.floor((1 - r*r) * (this.maxHP * 5 + 1));
+            this.createCorpse();
             return;
         }
 
@@ -63,6 +65,39 @@ export default class Enemy {
         ctx.stroke();
 
         ctx.restore();
+    };
+
+    createCorpse(){
+        const pieceCount = Math.ceil(3 + this.size/20 + Math.random() * this.size/20);
+        const angles = [];
+        const average = Math.PI * 2 / pieceCount;
+        for(let i = 0; i < pieceCount; i++){
+            angles[i] = i * average + Math.random() *  average/2 - average/4;            
+        }
+        for(let i = 0; i < pieceCount; i++){
+            const from = angles[i];
+            let to = angles[(i+1) % angles.length];
+            if(to < from){
+                to += 2*Math.PI;
+            }
+            const direction = (from+to) / 2;
+            const movement = {
+                x: Math.cos(direction),
+                y: Math.sin(direction)
+            }
+            const r = Math.random();
+            vector.scaleInPlace(movement, 4*(1-r*r)*this.size);
+
+            this.corpse.push({
+                position: {... this.position},
+                from,
+                to,
+                size: this.size,
+                movement,
+                speed: 1,
+                age: 0
+            })
+        }
     };
 
     static Small = {};

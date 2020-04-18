@@ -4,7 +4,7 @@ import '../utils/partition.js';
 import * as vector from '../utils/vectors.js';
 
 const sqrt05 = Math.sqrt(0.5);
-/*const waves = [
+const waves = [
     [
         Enemy.Small, Enemy.Small, 2,
         Enemy.Small, Enemy.Small, Enemy.Small, Enemy.Small
@@ -34,9 +34,9 @@ const sqrt05 = Math.sqrt(0.5);
         Enemy.Small, Enemy.Small, 2,
         Enemy.Small, Enemy.Small, 2,
         Enemy.Small, Enemy.Small, 2,
-        Enemy.Small, Enemy.Small]
-];*/
-const waves = [[Enemy.Boss1], [Enemy.Boss1]];
+        Enemy.Small, Enemy.Small
+    ]
+];
 const spawnDistance = 1000;
 
 const Game = {
@@ -73,13 +73,14 @@ const Game = {
             },
             enemies: [],
             drops: [],
+            corpses: [],
             nextWave: 0,
             currentWave: {
                 index: 0,
                 finished: true,
                 enemyIndex: 0
             },
-            winTimeout: 5
+            winTimeout: 10
         }
 
         window.__debug = {game: this};
@@ -94,6 +95,7 @@ const Game = {
         this.updateEnemies(dt);
         this.updateBullets(dt);
         this.updateDrops(dt);
+        this.updateCorpses(dt);
 
         if(this.data.bulletTimeout >= 0){
             this.data.bulletTimeout -= dt;
@@ -128,6 +130,7 @@ const Game = {
 
         ctx.translate(Math.floor(x + this.app.width/2), Math.floor(y + this.app.height/2));
 
+        this.drawCorpses(ctx);
         this.drawPrize(ctx);
         this.drawEnemies(ctx);
         this.drawBullets(ctx);
@@ -372,7 +375,10 @@ const Game = {
         this.data.enemies.forEach(enemy => enemy.update(dt, this.data.prize, this.data.bullets));
         const [alive, dead] = this.data.enemies.partition(enemy => enemy.alive);
         this.data.enemies = alive;
-        dead.forEach(enemy => this.spawnDrops(enemy));
+        dead.forEach(enemy => {
+            this.spawnDrops(enemy);
+            this.data.corpses.push(... enemy.corpse);
+        });
     },
 
     drawEnemies: function(ctx){
@@ -459,6 +465,27 @@ const Game = {
             ctx.fill();
         });
     },
+
+    updateCorpses: function(dt){
+        this.data.corpses.forEach(corpse => {
+            this.updateMovable(corpse, dt);
+            vector.scaleInPlace(corpse.movement, Math.max(0, 1-5*dt));
+            corpse.age += dt;
+        });
+    },
+
+    drawCorpses: function(ctx){
+        this.data.corpses.forEach(corpse => {
+            const alpha = Math.max(0.1, 1 - corpse.age/5);
+            const color = Math.floor(alpha * 255);
+            ctx.strokeStyle = `rgb(${color}, ${color}, ${color})`;
+            ctx.lineWidth = 4;
+
+            ctx.beginPath();
+            ctx.arc(corpse.position.x, corpse.position.y, corpse.size, corpse.from, corpse.to);
+            ctx.stroke();
+        });
+    }
 }
 
 export default Game;
