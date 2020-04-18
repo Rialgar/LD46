@@ -13,6 +13,7 @@ const Game = {
                 movement: {
                     x:0, y:0
                 },
+                aim: 0,
                 speed: 500
             },
             camera: {
@@ -28,6 +29,7 @@ const Game = {
 
     step: function(dt) {
         this.checkKeysAndButtons();
+        this.checkMousePos();
         this.updatePlayer(dt);
     },
     render: function(dt) {
@@ -68,14 +70,17 @@ const Game = {
 
     gamepadmove: function(data) {
         const threshold = 0.2;
-        const {x, y} = data.sticks[0];        
+        const {x: x0, y: y0} = data.sticks[0];
+        const {x: x1, y: y1} = data.sticks[1];
         this.data.player.movement = {
-            x: Math.abs(x) > threshold ? console.log({x}) || x : 0,
-            y: Math.abs(y) > threshold ? console.log({y}) || y : 0
+            x: Math.abs(x0) > threshold ? x0 : 0,
+            y: Math.abs(y0) > threshold ? y0 : 0
         }
-        if(this.data.player.movement.x !== 0 || this.data.player.movement.y !== 0){
-            this.data.usingGamePad = true;
+        if([x1, y1].some(v => Math.abs(v) > threshold)){
+            this.data.player.aim = Math.atan2(y1, x1);
         }
+
+        this.data.usingGamePad = [x0, y0, x1, y1].some(v => Math.abs(v) > threshold);
     },
 
     //custom functions
@@ -102,6 +107,15 @@ const Game = {
         }
     },
 
+    checkMousePos: function() {
+        if(!this.data.usingGamePad){
+            let {x, y} = this.app.mouse;
+            x -= Math.floor(this.app.width/2) + this.data.camera.positon.x + this.data.player.positon.x;
+            y -= Math.floor(this.app.height/2) + this.data.camera.positon.y + this.data.player.positon.y;
+            this.data.player.aim = Math.atan2(y, x);
+        }
+    },
+
     updatePlayer: function(dt) {
         const {positon, movement, speed} = this.data.player;
         positon.x += movement.x * speed * dt;
@@ -113,11 +127,28 @@ const Game = {
 
         const {x, y} = this.data.player.positon;
         const radius = 20;
+        const aimDist = 10;
+        const aimLength = 15;
+        const aimWidth = Math.PI / 10;
+
+        const transformBefore = ctx.getTransform();
+        ctx.translate(Math.round(x), Math.round(y));
 
         ctx.beginPath();
-        ctx.arc(Math.round(x), Math.round(y), radius, 0, 2 * Math.PI);
+        ctx.arc(0, 0, radius, 0, 2 * Math.PI);
         ctx.closePath();
         ctx.fill();
+
+        
+        ctx.rotate(this.data.player.aim);
+
+        ctx.beginPath();
+        ctx.arc(0, 0, radius + aimDist, -aimWidth, aimWidth);
+        ctx.lineTo(radius + aimDist + aimLength, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.setTransform(transformBefore);
     }
 }
 
