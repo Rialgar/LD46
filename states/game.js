@@ -1,3 +1,5 @@
+import Enemy from '../Enemy.js';
+
 const sqrt05 = Math.sqrt(0.5);
 
 const Game = {
@@ -30,7 +32,11 @@ const Game = {
                     y:0                    
                 },
                 health: 60                
-            }
+            },
+            enemies: [
+                new Enemy({...Enemy.Small, x: 200, y: 200}),
+                new Enemy({...Enemy.Medium, x: -200, y: 200}),
+            ]
         }
 
         window.__debug = {game: this};
@@ -40,9 +46,11 @@ const Game = {
         const healthScale = 1;
 
         this.checkKeysAndButtons();
-        this.checkMousePos();
-        this.updateBullets(dt);
+        this.checkMousePos();        
         this.updatePlayer(dt);
+        this.updateEnemies(dt);
+        this.updateBullets(dt);
+
         if(this.data.bulletTimeout >= 0){
             this.data.bulletTimeout -= dt;
         }
@@ -63,9 +71,10 @@ const Game = {
 
         ctx.translate(Math.floor(x + this.app.width/2), Math.floor(y + this.app.height/2));
 
-        this.drawBullets(ctx);
-        this.drawPlayer(ctx);
         this.drawPrize(ctx);
+        this.drawEnemies(ctx);
+        this.drawBullets(ctx);
+        this.drawPlayer(ctx);        
 
         ctx.restore();
     },
@@ -172,7 +181,7 @@ const Game = {
         const aimWidth = Math.PI / 10;
 
         ctx.save();
-        ctx.translate(Math.round(x), Math.round(y));
+        ctx.translate(x, y);
 
         ctx.beginPath();
         ctx.arc(0, 0, radius, 0, 2 * Math.PI);
@@ -205,7 +214,8 @@ const Game = {
                 },
                 speed: this.data.bulletSpeed,
                 aim,
-                age: 0
+                age: 0,
+                hasHit: false
             }
             this.updateMovable(bullet, -this.data.bulletTimeout + 20/this.data.bulletSpeed);
             this.data.bullets.push(bullet);            
@@ -220,7 +230,7 @@ const Game = {
             this.updateMovable(bullet, dt);
             bullet.age += dt;
         } );
-        this.data.bullets = this.data.bullets.filter( bullet => bullet.age < maxAge)
+        this.data.bullets = this.data.bullets.filter( bullet => bullet.age < maxAge && !bullet.hasHit);
     },
 
     drawBullets: function(ctx){
@@ -245,17 +255,18 @@ const Game = {
         const {x, y} = this.data.prize.position;
 
         ctx.save();
-        ctx.translate(Math.round(x), Math.round(y));
-        ctx.save();
+        ctx.translate(x, y);
 
         ctx.beginPath();
         ctx.arc(0, 0, 30, 0, 2 * Math.PI);
         ctx.closePath();
         ctx.fill();
-        ctx.clip();
+
         ctx.fillStyle = 'green';
-        ctx.fillRect(-30, 30 - this.data.prize.health, 60, 60);        
-        ctx.restore();
+        ctx.beginPath();
+        ctx.arc(0, 0, this.data.prize.health/2, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.fill();
 
         ctx.beginPath();
         ctx.arc(0, 0, 30, 0, 2 * Math.PI);
@@ -272,12 +283,16 @@ const Game = {
         ctx.closePath();
         ctx.stroke();
 
-        ctx.beginPath();
-        ctx.arc(0, 0, 2, 0, 2 * Math.PI);
-        ctx.closePath();
-        ctx.stroke();
-
         ctx.restore();
+    },
+
+    updateEnemies: function(dt){
+        this.data.enemies.forEach(enemy => enemy.update(dt, this.data.prize, this.data.bullets));
+        this.data.enemies = this.data.enemies.filter(enemy => enemy.alive);
+    },
+
+    drawEnemies: function(ctx){
+        this.data.enemies.forEach(enemy => enemy.render(ctx));
     }
 }
 
