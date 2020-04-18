@@ -26,6 +26,12 @@ const Lost = TextState([
     "Press any key or gamepad button", "to restart."
 ], 'restart');
 
+const Won = TextState([
+    "Yay, you won!",
+    "",
+    "Press any key or gamepad button", "to restart."
+], 'restart');
+
 const app = playground({
     preload: function() { },  
     create: function() { 
@@ -53,6 +59,10 @@ const app = playground({
 
     loose: function(){
         this.setState(Lost);
+    },
+
+    win: function(){
+        this.setState(Won);
     },
 
     start: function(){

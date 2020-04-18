@@ -71,4 +71,6 @@ export default class Enemy {
 
     static Small = {};
     static Medium = {size: 15, maxHP: 2};
+    static Big = {size: 20, maxHP: 3};
+    static Boss1 = {size: 50, maxHP: 100, speed: 20, dmg: 40};
 }

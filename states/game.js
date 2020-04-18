@@ -1,6 +1,39 @@
 import Enemy from '../Enemy.js';
 
 const sqrt05 = Math.sqrt(0.5);
+const waves = [
+    [
+        Enemy.Small, Enemy.Small, 2,
+        Enemy.Small, Enemy.Small, Enemy.Small, Enemy.Small
+    ],
+    [
+        Enemy.Medium, Enemy.Medium, 2,
+        Enemy.Medium, Enemy.Medium, Enemy.Small, Enemy.Small
+    ],
+    [
+        Enemy.Big, Enemy.Big, 2, 
+        Enemy.Medium, Enemy.Big, Enemy.Big, Enemy.Small, Enemy.Small
+    ],
+    [
+        Enemy.Big, Enemy.Big, Enemy.Big, 2, 
+        Enemy.Medium, Enemy.Medium, Enemy.Medium, Enemy.Medium, Enemy.Small, Enemy.Small, Enemy.Small, Enemy.Small
+    ],
+    [
+        Enemy.Small, Enemy.Small, Enemy.Small, Enemy.Small, Enemy.Boss1, 10,
+        Enemy.Small, Enemy.Small, Enemy.Small, Enemy.Small, 3,
+        Enemy.Small, Enemy.Small, Enemy.Small, 3,
+        Enemy.Small, Enemy.Small, Enemy.Small, 3,
+        Enemy.Small, Enemy.Small, 2,
+        Enemy.Small, Enemy.Small, 2,
+        Enemy.Small, Enemy.Small, 2,
+        Enemy.Small, Enemy.Small, 2,
+        Enemy.Small, Enemy.Small, 2,
+        Enemy.Small, Enemy.Small, 2,
+        Enemy.Small, Enemy.Small, 2,
+        Enemy.Small, Enemy.Small, 2,
+        Enemy.Small, Enemy.Small]
+];
+const spawnDistance = 1000;
 
 const Game = {
     create: function() { 
@@ -33,10 +66,13 @@ const Game = {
                 },
                 health: 60                
             },
-            enemies: [
-                new Enemy({...Enemy.Small, x: 200, y: 200}),
-                new Enemy({...Enemy.Medium, x: -200, y: 200}),
-            ]
+            enemies: [],
+            nextWave: 0,
+            currentWave: {
+                index: 0,
+                finished: true,
+                enemyIndex: 0                
+            }
         }
 
         window.__debug = {game: this};
@@ -57,7 +93,19 @@ const Game = {
         this.data.prize.health -= dt * healthScale;
         if(this.data.prize.health < 0){
             this.app.loose();
+            return;
+        }        
+
+        if(this.data.enemies.length == 0 && this.data.currentWave.finished){
+            console.log(waves.length, this.data.nextWave);
+            if(waves.length > this.data.nextWave) {
+                this.spawnWave(this.data.nextWave);
+                this.data.nextWave++;
+            } else {
+                this.app.win();
+            }
         }
+        this.updateWave(dt);
     },
 
     render: function(dt) {
@@ -293,6 +341,40 @@ const Game = {
 
     drawEnemies: function(ctx){
         this.data.enemies.forEach(enemy => enemy.render(ctx));
+    },
+
+    spawnWave: function(index){
+        this.data.currentWave = {
+            index: index,
+            finished: false,
+            enemyIndex: 0,
+            timeout: 0
+        }
+    },
+
+    updateWave: function(dt){
+        if(this.data.currentWave.timeout <= 0){
+            let spec = waves[this.data.currentWave.index][this.data.currentWave.enemyIndex];
+            while(typeof spec === 'object'){
+                const angle = Math.random() * Math.PI * 2;
+                const x = Math.sin(angle) * spawnDistance;
+                const y = Math.cos(angle) * spawnDistance;
+
+                console.log(x, y);
+                this.data.enemies.push(new Enemy({... spec, x, y}));
+
+                this.data.currentWave.enemyIndex++;
+                spec = waves[this.data.currentWave.index][this.data.currentWave.enemyIndex];
+            }
+            if(typeof spec === 'number'){                
+                this.data.currentWave.timeout = spec;
+                this.data.currentWave.enemyIndex++;
+            } else {
+                this.data.currentWave.finished = true;
+            }
+        } else {
+            this.data.currentWave.timeout -= dt;
+        }
     }
 }
 
