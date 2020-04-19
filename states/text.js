@@ -42,7 +42,7 @@ const TextState = (lines, funcName) => ({
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
             ctx.fillStyle = 'white';
-            ctx.font = `${fontSize}px 'Press Start 2P', cursive`;
+            ctx.font = `${fontSize}px 'Press Start 2P'`;
             ctx.fillText(line, center, top);
         });
     }
