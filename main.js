@@ -40,6 +40,11 @@ const app = playground({
     preload: function() { },
     create: function() {
         this.layer.canvas.id = 'game';
+        this.loadSounds("shoot.wav", "boom.wav", "hit.wav", "hit2.wav");
+        this.sound.alias('shoot_s', 'shoot', 0.2, 1);
+        this.sound.alias('boom_s', 'boom', 0.2, 1);
+        this.sound.alias('hit_s', 'hit', 0.1, 1);
+        this.sound.alias('hit2_s', 'hit2', 0.2, 1);
     },
     ready: function() {
         this.setState(Start)

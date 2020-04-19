@@ -327,6 +327,7 @@ const Game = {
             y: Math.sin(aim)
         };
         const spawnPos = vectors.add(position, vectors.scale(movement, 45));
+        let sound = false;
 
         while(this.data.bulletTimeout <= 0){
             const bullet = {
@@ -350,6 +351,11 @@ const Game = {
                 new Particle({...spawnPos}),
                 new Particle({...spawnPos})
             )
+
+            if(!sound){
+                this.app.sound.play('shoot_s');
+                sound = true;
+            }
         }
     },
 
@@ -360,6 +366,7 @@ const Game = {
             this.updateMovable(bullet, dt);
             bullet.age += dt;
         } );
+        let sound = false;
         this.data.bullets.filter(bullet => bullet.hasHit).forEach(bullet => {
             this.data.particles.push(
                 new Particle({...bullet.position}),
@@ -368,6 +375,10 @@ const Game = {
                 new Particle({...bullet.position}),
                 new Particle({...bullet.position})
             );
+            if(!sound){
+                this.app.playSound('hit_s');
+                sound = true;
+            }
         });
         this.data.bullets = this.data.bullets.filter( bullet => bullet.age < maxAge && !bullet.hasHit && vectors.length(bullet.position) < drawDistance);
     },
@@ -431,6 +442,8 @@ const Game = {
         this.data.enemies.forEach(enemy => enemy.update(dt, this.data.prize.position, this.data.bullets));
         const [alive, dead] = this.data.enemies.partition(enemy => enemy.alive);
         this.data.enemies = alive;
+        let boomSound = false;
+        let dmgSound = false;
         dead.forEach(enemy => {
             this.spawnDrops(enemy);
             this.data.corpses.push(... enemy.corpse);
@@ -444,6 +457,16 @@ const Game = {
             this.data.prize.health -= enemy.dmgDealt;
             this.data.screenshake += enemy.size/2 + enemy.dmgDealt * 5;
             this.data.damageShake += enemy.dmgDealt * 2;
+
+            if(enemy.dmgDealt > 0 && !dmgSound){
+                this.app.playSound("hit2_s");
+                dmgSound = true;
+            }
+
+            if(enemy.dmgDealt === 0 && !boomSound){
+                this.app.playSound("boom_s");
+                boomSound = true;
+            }
         });
     },
 
