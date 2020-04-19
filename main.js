@@ -4,11 +4,11 @@ import Game from './states/game.js';
 import TextState from './states/text.js'
 
 const Help = TextState([
-    "Move - WASD/Arrows", "or Left Stick",
+    "Move - WASD/Arrows or Left Stick",
     "",
-    "Aim - Mouse", " or Right Stick",
+    "Aim - Mouse or Right Stick",
     "",
-    "Shoot - Left Mouse/Space", " or Right Trigger",
+    "Shoot - Left Mouse or Right Trigger",
     "",
     "Enemies drop food, bring it to 3-eyes",
     "",

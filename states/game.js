@@ -5,6 +5,12 @@ import '../utils/partition.js';
 import * as vectors from '../utils/vectors.js';
 import {drawEye} from '../utils/eyes.js';
 const sqrt05 = Math.sqrt(0.5);
+const prizeEyes = [
+    {x: -25, y: +3},
+    {x: +25, y: +3},
+    {x: 0, y: -25}
+]
+
 const waves = [
     //[{...Enemy.Small, speed: 1}],
     [
@@ -86,9 +92,11 @@ const Game = {
                 enemyIndex: 0
             },
             winTimeout: 10,
+            looseTimeout: 10,
             screenshake: 0,
             damageShake: 0,
-            scale: 1
+            scale: 1,
+            lose: false
         }
 
         window.__debug = {game: this};
@@ -100,8 +108,6 @@ const Game = {
     },
 
     step: function(dt) {
-        console.log(dt);
-        
         const healthScale = 1;
 
         this.checkKeysAndButtons();
@@ -118,8 +124,16 @@ const Game = {
         }
         this.data.prize.health -= dt * healthScale;
         if(this.data.prize.health < 0){
-            this.app.loose();
-            return;
+            if(!this.data.lost){
+                this.destroyPrize();
+                this.data.lost = true;
+            }
+            if(this.data.looseTimeout <= 0){
+                this.app.loose();
+                return;
+            } else {
+                this.data.looseTimeout -= dt;
+            }
         }
 
         if(this.data.enemies.length == 0 && this.data.currentWave.finished){
@@ -128,6 +142,7 @@ const Game = {
                 this.data.nextWave++;
             } else if(this.data.winTimeout <= 0){
                 this.app.win();
+                return;
             } else {
                 this.data.winTimeout -= dt;
             }
@@ -241,7 +256,7 @@ const Game = {
                 y *= sqrt05;
             }
             this.data.player.movement = {x, y};
-            if(this.app.mouse.left || this.app.keyboard.keys.space){
+            if(this.app.mouse.left){
                 this.spawnBullets();
             }
         }
@@ -269,7 +284,7 @@ const Game = {
     updatePlayer: function(dt) {
         this.updateMovable(this.data.player, dt);
         const dist = vectors.distance(this.data.player.position, this.data.prize.position);
-        if(dist < 30){
+        if(!this.data.lost && dist < 30){
             const delta = Math.min(60 - this.data.prize.health, this.data.player.food)
             this.data.prize.health += delta;
             this.data.player.food -= delta;
@@ -401,6 +416,10 @@ const Game = {
     },
 
     drawPrize: function(ctx){
+        if(this.data.lost){
+            return;
+        }
+
         ctx.fillStyle = 'black';
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 4;
@@ -428,20 +447,74 @@ const Game = {
 
         ctx.restore();
 
-        const eyes = [
-            {x: x-25, y: y+3},
-            {x: x+25, y: y+3},
-            {x: x, y: y-25}
-        ]
-
         if(this.data.damageShake < 0.5){
-            eyes.forEach(position => drawEye({position, radius: 15, color: 'green', target: this.data.player.position}, ctx))
+            prizeEyes.forEach(position => drawEye({position: vectors.add(position, this.data.prize.position), radius: 15, color: 'green', target: this.data.player.position}, ctx))
         } else {
-            eyes.forEach(position => drawEye({position, radius: 15, color: 'red', target: vectors.addRandom(position, this.data.damageShake)}, ctx))
+            prizeEyes.forEach(position => drawEye({position: vectors.add(position, this.data.prize.position), radius: 15, color: 'red', target: vectors.addRandom(position, this.data.damageShake)}, ctx))
         }
     },
 
+    destroyPrize: function(){
+        const corpse = [];
+
+        const pieceCount = 15;
+        const angles = [];
+        const average = Math.PI * 2 / pieceCount;
+        for(let i = 0; i < pieceCount; i++){
+            angles[i] = i * average + Math.random() *  average/2 - average/4;
+        }
+        for(let i = 0; i < pieceCount; i++){
+            const from = angles[i];
+            let to = angles[(i+1) % angles.length];
+            if(to < from){
+                to += 2*Math.PI;
+            }
+            const direction = (from+to) / 2;
+            const movement = {
+                x: Math.cos(direction),
+                y: Math.sin(direction)
+            }
+            const r = Math.random();
+            vectors.scaleInPlace(movement, 20*(1-r*r)*30);
+
+            corpse.push({
+                position: {... this.data.prize.position},
+                from,
+                to,
+                size: 30,
+                movement,
+                speed: 1,
+                age: -5
+            })
+        }
+        prizeEyes.forEach(relative => {
+            const position = vectors.add(relative, this.data.prize.position);
+            const angle = Math.random() * Math.PI * 2;
+            corpse.push({
+                position, radius: 15, color: `green`, target: {
+                    x: Math.cos(angle) * drawDistance,
+                    y: Math.sin(angle) * drawDistance
+                },
+                movement: vectors.scale(position, 200/vectors.length(position)),
+                speed: 1,
+                isEye: true, age: -10
+            })
+        })
+        this.data.corpses.push(...corpse);
+        const baseParticle = {...this.data.prize.position, minLifetime: 5, maxLifetime: 10, maxAlpha: 1, speed: 2000};
+        for(let i = 0; i < 500; i++){
+            this.data.particles.push(
+                new Particle({...baseParticle, size: 5+Math.random()*10})
+            )
+        }
+        this.app.playSound('bigBoom_s');
+    },
+
     updateEnemies: function(dt){
+        if(this.data.lost){
+            return;
+        }
+
         this.data.enemies.forEach(enemy => enemy.update(dt, this.data.prize.position, this.data.bullets));
         const [alive, dead] = this.data.enemies.partition(enemy => enemy.alive);
         this.data.enemies = alive;
@@ -451,11 +524,11 @@ const Game = {
         dead.forEach(enemy => {
             this.spawnDrops(enemy);
             this.data.corpses.push(... enemy.corpse);
-            const baseParticle = {...enemy.position,minLifetime: 1, maxLifetime1: 3, maxAlpha: 1};
+            const baseParticle = {...enemy.position,minLifetime: 1, maxLifetime: 1.5, maxAlpha: 1, speed: 10 * Math.min(200, enemy.drops)};
             const particleCount = enemy.size*enemy.size/10;
             for(let i = 0; i < particleCount; i++){
                 this.data.particles.push(
-                    new Particle({...baseParticle, speed: 10 * Math.min(200, enemy.drops), size: 5+Math.random()*10})
+                    new Particle({...baseParticle, size: 5+Math.random()*10})
                 )
             }
             this.data.prize.health -= enemy.dmgDealt;
@@ -577,7 +650,7 @@ const Game = {
 
     drawCorpses: function(ctx){
         this.data.corpses.forEach(corpse => {
-            const alpha = Math.max(0.1, 1 - corpse.age/5);
+            const alpha = Math.min(1, Math.max(0.1, 1 - corpse.age/5));
             if(corpse.isEye){
                 drawEye({...corpse, alpha}, ctx);
             } else {
