@@ -1,8 +1,8 @@
-import * as vector from './utils/vectors.js';
+import * as vectors from './utils/vectors.js';
 import {drawEye} from './utils/eyes.js';
 
 export default class Enemy {
-    constructor({x, y, size = 10, speed = 100, maxHP = 1, dmg = 5, color = 'red'}){
+    constructor({x, y, size = 10, speed = 100, maxHP = 1, dmg = 5, r = 255, g = 0, b = 0}){
         this.alive = true;
         this.position = {x, y};
         this.size = size;
@@ -11,13 +11,13 @@ export default class Enemy {
         this.hp = maxHP;
         this.dmg = dmg;
         this.dmgDealt = 0;
-        this.color = color;
+        this.color = {r, g, b};
         this.drops = 0;
         this.corpse = [];
     }
 
     update(dt, target, bullets){
-        const bulletHits = bullets.filter( bullet => !bullet.hasHit && vector.distance(this.position, bullet.position) < this.size);
+        const bulletHits = bullets.filter( bullet => !bullet.hasHit && vectors.distance(this.position, bullet.position) < this.size);
         bulletHits.forEach(bullet => {
             bullet.hasHit = true;
             this.hp--;
@@ -30,8 +30,8 @@ export default class Enemy {
             return;
         }
 
-        const diff = vector.difference(target, this.position);
-        const dist = vector.length(diff);
+        const diff = vectors.difference(target, this.position);
+        const dist = vectors.length(diff);
 
         if(dist < 30 + this.size){
             this.alive = false;
@@ -39,23 +39,46 @@ export default class Enemy {
             return;
         }
 
-        vector.addInPlace(this.position, vector.scale(diff, this.speed * dt / dist));
+        vectors.addInPlace(this.position, vectors.scale(diff, this.speed * dt / dist));
     };
 
-    render(ctx, target){
-        ctx.fillStyle = 'black';
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 4;
+    render(ctx, target, drawDistance){
+        const {r,g,b} = this.color;
+        const distO = vectors.length(this.position);        
+        if(distO > drawDistance + this.size){
+            ctx.save();
+
+            const angle = Math.atan2(this.position.y, this.position.x);
+            ctx.rotate(angle);
+
+            const gradDist = 500;
+            const gradient = ctx.createRadialGradient(drawDistance - 2 + gradDist, 0, gradDist, drawDistance - 2 + gradDist, 0, gradDist + 5 *Math.sqrt(this.size));
+            gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 1)`);
+            gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = 20;
+
+            ctx.beginPath();
+            ctx.arc(0, 0, drawDistance - 22, - Math.PI, Math.PI);
+            ctx.stroke();
+
+            ctx.restore();
+        }
 
         ctx.save();
         ctx.translate(this.position.x, this.position.y);
+
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 4;
 
         ctx.beginPath();
         ctx.arc(0, 0, this.size, 0, 2 * Math.PI);
         ctx.closePath();
         ctx.fill();
 
-        ctx.fillStyle = this.color;
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 1)`;
         ctx.beginPath();
         ctx.arc(0, 0, this.size*this.hp/this.maxHP, 0, 2 * Math.PI);
         ctx.closePath();
@@ -68,11 +91,11 @@ export default class Enemy {
 
         ctx.restore();
 
-        const dir = vector.difference(target, this.position);
-        const dist = vector.length(dir);
-        vector.scaleInPlace(dir, this.size*2/3/dist);
+        const dir = vectors.difference(target, this.position);
+        const dist = vectors.length(dir);
+        vectors.scaleInPlace(dir, this.size*2/3/dist);
 
-        drawEye({... vector.add(this.position, dir), radius: this.size/2, color: this.color, target}, ctx);
+        drawEye({... vectors.add(this.position, dir), radius: this.size/2, color: `rgba(${r}, ${g}, ${b}, 1)`, target}, ctx);
     };
 
     createCorpse(){
@@ -80,7 +103,7 @@ export default class Enemy {
         const angles = [];
         const average = Math.PI * 2 / pieceCount;
         for(let i = 0; i < pieceCount; i++){
-            angles[i] = i * average + Math.random() *  average/2 - average/4;            
+            angles[i] = i * average + Math.random() *  average/2 - average/4;
         }
         for(let i = 0; i < pieceCount; i++){
             const from = angles[i];
@@ -94,7 +117,7 @@ export default class Enemy {
                 y: Math.sin(direction)
             }
             const r = Math.random();
-            vector.scaleInPlace(movement, 6*(1-r*r)*this.size);
+            vectors.scaleInPlace(movement, 6*(1-r*r)*this.size);
 
             this.corpse.push({
                 position: {... this.position},

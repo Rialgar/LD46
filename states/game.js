@@ -448,7 +448,7 @@ const Game = {
     },
 
     drawEnemies: function(ctx){
-        this.data.enemies.forEach(enemy => enemy.render(ctx, this.data.prize.position));
+        this.data.enemies.forEach(enemy => enemy.render(ctx, this.data.prize.position, drawDistance));
     },
 
     spawnWave: function(index){
