@@ -4,15 +4,19 @@ import Game from './states/game.js';
 import TextState from './states/text.js'
 
 const Help = TextState([
-    "Move - WASD/Arrows or Left Stick",
-    "Aim - Mouse or Right Stick",
-    "Shoot - Left Mouse or Right Trigger",
+    "Move - WASD/Arrows", "or Left Stick",
+    "",
+    "Aim - Mouse", " or Right Stick",
+    "",
+    "Shoot - Left Mouse/Space", " or Right Trigger",
+    "",
+    "Enemies drop food, bring it to 3-eyes",
     "",
     "Press enter, space or start", "to continue."
 ], 'start');
 
 const Start = TextState([
-    "Keep the target thingy alive!",
+    "Keep 3-eyes alive!",
     "Protect and feed it!",
     "",
     "Press enter, space or start", "to start.",

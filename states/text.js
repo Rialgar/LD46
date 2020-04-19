@@ -31,7 +31,7 @@ const TextState = (lines, funcName) => ({
     gamepadmove: function(data) { },
 
     drawText: function(ctx){
-        const fontSize = Math.min(this.app.height/20, this.app.width/40);
+        const fontSize = Math.min(this.app.height/25, this.app.width/40);
         const lineHeight = fontSize * 1.5;
         const totalHeight = lines.length * lineHeight;
         const center = this.app.width/2;
