@@ -95,7 +95,7 @@ export default class Enemy {
         const dist = vectors.length(dir);
         vectors.scaleInPlace(dir, this.size*2/3/dist);
 
-        drawEye({... vectors.add(this.position, dir), radius: this.size/2, color: `rgba(${r}, ${g}, ${b}, 1)`, target}, ctx);
+        drawEye({... vectors.add(this.position, dir), radius: this.size*2/3, color: `rgba(${r}, ${g}, ${b}, 1)`, target, angry:true}, ctx);
     };
 
     createCorpse(){
