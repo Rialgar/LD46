@@ -6,6 +6,7 @@ import * as vectors from '../utils/vectors.js';
 import {drawEye} from '../utils/eyes.js';
 const sqrt05 = Math.sqrt(0.5);
 const waves = [
+    //[{...Enemy.Small, speed: 1}],
     [
         Enemy.Small, Enemy.Small, 2,
         Enemy.Small, Enemy.Small, Enemy.Small, Enemy.Small
@@ -99,6 +100,8 @@ const Game = {
     },
 
     step: function(dt) {
+        console.log(dt);
+        
         const healthScale = 1;
 
         this.checkKeysAndButtons();
@@ -142,7 +145,7 @@ const Game = {
         ctx.lineWidth = 4;
         ctx.fillRect(0,0,this.app.width, this.app.height);
 
-        ctx.save();        
+        ctx.save();
 
         ctx.translate(this.app.width/2, this.app.height/2);
         ctx.scale(this.data.scale, this.data.scale);
@@ -280,7 +283,7 @@ const Game = {
         ctx.lineWidth = 5;
 
         const {x, y} = this.data.player.position;
-        const recoil = this.data.player.recoil;        
+        const recoil = this.data.player.recoil;
         const radius = 20;
         const aimDist = 10;
         const aimLength = 15;
@@ -432,9 +435,9 @@ const Game = {
         ]
 
         if(this.data.damageShake < 0.5){
-            eyes.forEach(eye => drawEye({...eye, radius: 15, color: 'green', target: this.data.player.position}, ctx))
+            eyes.forEach(position => drawEye({position, radius: 15, color: 'green', target: this.data.player.position}, ctx))
         } else {
-            eyes.forEach(eye => drawEye({...eye, radius: 15, color: 'red', target: vectors.addRandom(eye, this.data.damageShake)}, ctx))
+            eyes.forEach(position => drawEye({position, radius: 15, color: 'red', target: vectors.addRandom(position, this.data.damageShake)}, ctx))
         }
     },
 
@@ -575,13 +578,17 @@ const Game = {
     drawCorpses: function(ctx){
         this.data.corpses.forEach(corpse => {
             const alpha = Math.max(0.1, 1 - corpse.age/5);
-            const color = Math.floor(alpha * 255);
-            ctx.strokeStyle = `rgb(${color}, ${color}, ${color})`;
-            ctx.lineWidth = 4;
+            if(corpse.isEye){
+                drawEye({...corpse, alpha}, ctx);
+            } else {
+                const color = Math.floor(alpha * 255);
+                ctx.strokeStyle = `rgb(${color}, ${color}, ${color})`;
+                ctx.lineWidth = 4;
 
-            ctx.beginPath();
-            ctx.arc(corpse.position.x, corpse.position.y, corpse.size, corpse.from, corpse.to);
-            ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(corpse.position.x, corpse.position.y, corpse.size, corpse.from, corpse.to);
+                ctx.stroke();
+            }
         });
     },
 

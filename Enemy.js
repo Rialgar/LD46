@@ -26,7 +26,7 @@ export default class Enemy {
             this.alive = false;
             const r = Math.random() * Math.random();
             this.drops = Math.floor((1 - r*r) * (this.maxHP * 5 + 1));
-            this.createCorpse();
+            this.createCorpse(target);
             return;
         }
 
@@ -95,11 +95,11 @@ export default class Enemy {
         const dist = vectors.length(dir);
         vectors.scaleInPlace(dir, this.size*2/3/dist);
 
-        drawEye({... vectors.add(this.position, dir), radius: this.size*2/3, color: `rgba(${r}, ${g}, ${b}, 1)`, target, angry:true}, ctx);
+        drawEye({position: vectors.add(this.position, dir), radius: this.size*2/3, color: `rgba(${r}, ${g}, ${b}, 1)`, target, angry:true}, ctx);
     };
 
-    createCorpse(){
-        const pieceCount = Math.ceil(3 + this.size/20 + Math.random() * this.size/20);
+    createCorpse(target){
+        const pieceCount = Math.ceil(this.size/5 + Math.random() * this.size/5);
         const angles = [];
         const average = Math.PI * 2 / pieceCount;
         for(let i = 0; i < pieceCount; i++){
@@ -129,6 +129,18 @@ export default class Enemy {
                 age: 0
             })
         }
+
+        const dir = vectors.difference(target, this.position);
+        const dist = vectors.length(dir);
+        vectors.scaleInPlace(dir, this.size*2/3/dist);
+        const {r,g,b} = this.color;
+
+        this.corpse.push({
+            position: vectors.add(this.position, dir), radius: this.size*2/3, color: `rgba(${r}, ${g}, ${b}, 1)`, target,
+            movement: vectors.scale(dir, 1/vectors.length(dir)),
+            speed: this.speed,
+            isEye: true, age: 0
+        });
     };
 
     static Small = {};
