@@ -21,6 +21,14 @@ export const scaleInPlace = (target, factor) => {
     return target;
 }
 
+export const add = ({x: x1,y: y1},{x: x2,y: y2}) => {
+    return {x: x1+x2, y: y1+y2};
+};
+
+export const addRandom = ({x, y}, range) => {
+    return {x: x+Math.random()*range-range/2, y: y+Math.random()*range-range/2};
+};
+
 export const addInPlace = (target, change) => {
     target.x += change.x;
     target.y += change.y;

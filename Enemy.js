@@ -1,4 +1,5 @@
 import * as vector from './utils/vectors.js';
+import {drawEye} from './utils/eyes.js';
 
 export default class Enemy {
     constructor({x, y, size = 10, speed = 100, maxHP = 1, dmg = 5, color = 'red'}){
@@ -15,7 +16,7 @@ export default class Enemy {
         this.corpse = [];
     }
 
-    update(dt, prize, bullets){
+    update(dt, target, bullets){
         const bulletHits = bullets.filter( bullet => !bullet.hasHit && vector.distance(this.position, bullet.position) < this.size);
         bulletHits.forEach(bullet => {
             bullet.hasHit = true;
@@ -29,7 +30,7 @@ export default class Enemy {
             return;
         }
 
-        const diff = vector.difference(prize.position, this.position);
+        const diff = vector.difference(target, this.position);
         const dist = vector.length(diff);
 
         if(dist < 30 + this.size){
@@ -41,7 +42,7 @@ export default class Enemy {
         vector.addInPlace(this.position, vector.scale(diff, this.speed * dt / dist));
     };
 
-    render(ctx){
+    render(ctx, target){
         ctx.fillStyle = 'black';
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 4;
@@ -66,6 +67,12 @@ export default class Enemy {
         ctx.stroke();
 
         ctx.restore();
+
+        const dir = vector.difference(target, this.position);
+        const dist = vector.length(dir);
+        vector.scaleInPlace(dir, this.size*2/3/dist);
+
+        drawEye({... vector.add(this.position, dir), radius: this.size/2, color: this.color, target}, ctx);
     };
 
     createCorpse(){

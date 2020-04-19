@@ -2,6 +2,7 @@ import Enemy from '../Enemy.js';
 import '../utils/partition.js';
 
 import * as vector from '../utils/vectors.js';
+import {drawEye} from '../utils/eyes.js';
 
 const sqrt05 = Math.sqrt(0.5);
 const waves = [
@@ -81,7 +82,8 @@ const Game = {
                 enemyIndex: 0
             },
             winTimeout: 10,
-            screenshake: 0
+            screenshake: 0,
+            damageShake: 0
         }
 
         window.__debug = {game: this};
@@ -120,6 +122,7 @@ const Game = {
         this.updateWave(dt);
 
         this.data.screenshake *= Math.max(0, 1 - 5*dt);
+        this.data.damageShake *= Math.max(0, 1 - 5*dt);
     },
 
     render: function(dt) {
@@ -362,21 +365,23 @@ const Game = {
         ctx.closePath();
         ctx.stroke();
 
-        ctx.beginPath();
-        ctx.arc(0, 0, 20, 0, 2 * Math.PI);
-        ctx.closePath();
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(0, 0, 11, 0, 2 * Math.PI);
-        ctx.closePath();
-        ctx.stroke();
-
         ctx.restore();
+
+        const eyes = [
+            {x: x-25, y: y+3},
+            {x: x+25, y: y+3},
+            {x: x, y: y-25}
+        ]
+
+        if(this.data.damageShake < 0.5){            
+            eyes.forEach(eye => drawEye({...eye, radius: 15, color: 'green', target: this.data.player.position}, ctx))
+        } else {
+            eyes.forEach(eye => drawEye({...eye, radius: 15, color: 'red', target: vector.addRandom(eye, this.data.damageShake)}, ctx))
+        }
     },
 
     updateEnemies: function(dt){
-        this.data.enemies.forEach(enemy => enemy.update(dt, this.data.prize, this.data.bullets));
+        this.data.enemies.forEach(enemy => enemy.update(dt, this.data.prize.position, this.data.bullets));
         const [alive, dead] = this.data.enemies.partition(enemy => enemy.alive);
         this.data.enemies = alive;
         dead.forEach(enemy => {
@@ -384,11 +389,12 @@ const Game = {
             this.data.corpses.push(... enemy.corpse);
             this.data.prize.health -= enemy.dmgDealt;
             this.data.screenshake += enemy.size/2 + enemy.dmgDealt * 5;
+            this.data.damageShake += enemy.dmgDealt * 2;
         });
     },
 
     drawEnemies: function(ctx){
-        this.data.enemies.forEach(enemy => enemy.render(ctx));
+        this.data.enemies.forEach(enemy => enemy.render(ctx, this.data.prize.position));
     },
 
     spawnWave: function(index){
