@@ -80,7 +80,8 @@ const Game = {
                 finished: true,
                 enemyIndex: 0
             },
-            winTimeout: 10
+            winTimeout: 10,
+            screenshake: 0
         }
 
         window.__debug = {game: this};
@@ -117,6 +118,8 @@ const Game = {
             }
         }
         this.updateWave(dt);
+
+        this.data.screenshake *= Math.max(0, 1 - 5*dt);
     },
 
     render: function(dt) {
@@ -128,7 +131,7 @@ const Game = {
 
         const {x, y} = this.data.camera.position;
 
-        ctx.translate(Math.floor(x + this.app.width/2), Math.floor(y + this.app.height/2));
+        ctx.translate(x + this.app.width/2 + Math.random() * this.data.screenshake - this.data.screenshake/2, y + this.app.height/2  + Math.random() * this.data.screenshake - this.data.screenshake/2);
 
         this.drawCorpses(ctx);
         this.drawPrize(ctx);
@@ -305,6 +308,7 @@ const Game = {
             this.updateMovable(bullet, -this.data.bulletTimeout + 20/this.data.bulletSpeed);
             this.data.bullets.push(bullet);
             this.data.bulletTimeout += this.data.bulletSpacing;
+            this.data.screenshake += 1;
         }
     },
 
@@ -378,6 +382,8 @@ const Game = {
         dead.forEach(enemy => {
             this.spawnDrops(enemy);
             this.data.corpses.push(... enemy.corpse);
+            this.data.prize.health -= enemy.dmgDealt;
+            this.data.screenshake += enemy.size/2 + enemy.dmgDealt * 5;
         });
     },
 

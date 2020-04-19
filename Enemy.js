@@ -9,6 +9,7 @@ export default class Enemy {
         this.maxHP = maxHP;
         this.hp = maxHP;
         this.dmg = dmg;
+        this.dmgDealt = 0;
         this.color = color;
         this.drops = 0;
         this.corpse = [];
@@ -32,8 +33,8 @@ export default class Enemy {
         const dist = vector.length(diff);
 
         if(dist < 30 + this.size){
-            prize.health -= this.dmg;
             this.alive = false;
+            this.dmgDealt = this.dmg;
             return;
         }
 
