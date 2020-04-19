@@ -52,8 +52,8 @@ export default class Enemy {
             ctx.rotate(angle);
 
             const gradDist = 500;
-            const gradient = ctx.createRadialGradient(drawDistance - 2 + gradDist, 0, gradDist, drawDistance - 2 + gradDist, 0, gradDist + 5 *Math.sqrt(this.size));
-            gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 1)`);
+            const gradient = ctx.createRadialGradient(drawDistance - 4 + gradDist, 0, gradDist, drawDistance - 4 + gradDist, 0, gradDist + 5 + 5 *Math.sqrt(this.size));
+            gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${1 - (distO-drawDistance)/600})`);
             gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
 
             ctx.strokeStyle = gradient;
