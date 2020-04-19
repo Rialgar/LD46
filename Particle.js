@@ -1,16 +1,18 @@
 import * as vectors from './utils/vectors.js';
 
 export default class Particle {
-    constructor({x, y, speed=150, minLifetime = 0.15, maxLifetime = 0.5, r=255, g=255, b=255, maxAlpha=0.5}){
+    constructor({x, y, speed=150, minLifetime = 0.15, maxLifetime = 0.5, r=255, g=255, b=255, maxAlpha=0.5, size=5}){
         this.position = {x, y};
         this.lifetime = minLifetime + Math.random() * (maxLifetime - minLifetime);
         this.age = 0;
         this.alive = true;
         this.color = {r,g,b};
         this.maxAlpha = maxAlpha;
+        this.size = size
 
         const angle = Math.random() * 2 * Math.PI;
-        const length = Math.random() * speed;
+        const rand = Math.random();
+        const length = (1 - rand * rand) * speed;
         this.movement = {
             x: Math.cos(angle) * length,
             y: Math.sin(angle) * length
@@ -30,12 +32,12 @@ export default class Particle {
         ctx.translate(this.position.x, this.position.y);
 
         const alpha = this.maxAlpha * Math.max(0, 1 - this.age/this.lifetime);
-        const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 5);
+        const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.size);
         gradient.addColorStop(0, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${alpha})`);
         gradient.addColorStop(1, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, 0)`);
         ctx.fillStyle = gradient;
 
-        ctx.fillRect(-5, -5, 10, 10);
+        ctx.fillRect(-this.size, -this.size, 2*this.size, 2*this.size);
 
         ctx.restore();
     };

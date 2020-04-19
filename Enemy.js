@@ -94,7 +94,7 @@ export default class Enemy {
                 y: Math.sin(direction)
             }
             const r = Math.random();
-            vector.scaleInPlace(movement, 4*(1-r*r)*this.size);
+            vector.scaleInPlace(movement, 6*(1-r*r)*this.size);
 
             this.corpse.push({
                 position: {... this.position},

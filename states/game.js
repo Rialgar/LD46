@@ -7,6 +7,7 @@ import {drawEye} from '../utils/eyes.js';
 let maxDt= 0;
 const sqrt05 = Math.sqrt(0.5);
 const waves = [
+    [Enemy.Boss1],
     [
         Enemy.Small, Enemy.Small, 2,
         Enemy.Small, Enemy.Small, Enemy.Small, Enemy.Small
@@ -321,7 +322,7 @@ const Game = {
             this.data.bullets.push(bullet);
             this.data.bulletTimeout += this.data.bulletSpacing;
             this.data.screenshake += 1;
-            
+
             this.data.particles.push(
                 new Particle({...spawnPos}),
                 new Particle({...spawnPos}),
@@ -399,7 +400,7 @@ const Game = {
             {x: x, y: y-25}
         ]
 
-        if(this.data.damageShake < 0.5){            
+        if(this.data.damageShake < 0.5){
             eyes.forEach(eye => drawEye({...eye, radius: 15, color: 'green', target: this.data.player.position}, ctx))
         } else {
             eyes.forEach(eye => drawEye({...eye, radius: 15, color: 'red', target: vectors.addRandom(eye, this.data.damageShake)}, ctx))
@@ -413,9 +414,11 @@ const Game = {
         dead.forEach(enemy => {
             this.spawnDrops(enemy);
             this.data.corpses.push(... enemy.corpse);
-            for(let i = 0; i < 4*enemy.size; i++){            
+            const baseParticle = {...enemy.position,minLifetime: 1, maxLifetime1: 3, maxAlpha: 1};
+            const particleCount = enemy.size*enemy.size/10;
+            for(let i = 0; i < particleCount; i++){
                 this.data.particles.push(
-                    new Particle({...enemy.position, speed: 10 * Math.min(200, enemy.drops), minLifetime: 1, maxLifetime1: 3, maxAlpha: 1})
+                    new Particle({...baseParticle, speed: 10 * Math.min(200, enemy.drops), size: 5+Math.random()*10})
                 )
             }
             this.data.prize.health -= enemy.dmgDealt;
