@@ -443,6 +443,7 @@ const Game = {
         const [alive, dead] = this.data.enemies.partition(enemy => enemy.alive);
         this.data.enemies = alive;
         let boomSound = false;
+        let bigBoomSound = false;
         let dmgSound = false;
         dead.forEach(enemy => {
             this.spawnDrops(enemy);
@@ -458,14 +459,17 @@ const Game = {
             this.data.screenshake += enemy.size/2 + enemy.dmgDealt * 5;
             this.data.damageShake += enemy.dmgDealt * 2;
 
-            if(enemy.dmgDealt > 0 && !dmgSound){
+            if(enemy.dmgDealt > 0 && !dmgSound) {
                 this.app.playSound("hit2_s");
                 dmgSound = true;
-            }
-
-            if(enemy.dmgDealt === 0 && !boomSound){
-                this.app.playSound("boom_s");
-                boomSound = true;
+            } else if(enemy.dmgDealt === 0) {
+                if(enemy.size < 40 && !boomSound) {
+                    this.app.playSound("boom_s");
+                    boomSound = true;
+                } else if(enemy.size >= 40 && !bigBoomSound) {
+                    this.app.playSound("bigBoom_s");
+                    bigBoomSound = true;
+                }
             }
         });
     },
