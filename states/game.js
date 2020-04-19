@@ -4,10 +4,8 @@ import '../utils/partition.js';
 
 import * as vectors from '../utils/vectors.js';
 import {drawEye} from '../utils/eyes.js';
-let maxDt= 0;
 const sqrt05 = Math.sqrt(0.5);
 const waves = [
-    [Enemy.Boss1],
     [
         Enemy.Small, Enemy.Small, 2,
         Enemy.Small, Enemy.Small, Enemy.Small, Enemy.Small
@@ -41,6 +39,7 @@ const waves = [
     ]
 ];
 const spawnDistance = 1000;
+const drawDistance = 400;
 
 const Game = {
     create: function() {
@@ -56,7 +55,8 @@ const Game = {
                 },
                 aim: 0,
                 speed: 500,
-                food: 0
+                food: 0,
+                recoil: 0
             },
             camera: {
                 position: {
@@ -86,10 +86,16 @@ const Game = {
             },
             winTimeout: 10,
             screenshake: 0,
-            damageShake: 0
+            damageShake: 0,
+            scale: 1
         }
 
         window.__debug = {game: this};
+        this.resize();
+    },
+
+    resize: function(){
+        this.data.scale = Math.min(this.app.width, this.app.height)/(2*drawDistance+5);
     },
 
     step: function(dt) {
@@ -127,21 +133,27 @@ const Game = {
 
         this.data.screenshake *= Math.max(0, 1 - 5*dt);
         this.data.damageShake *= Math.max(0, 1 - 5*dt);
-
-        maxDt = Math.max(maxDt, dt);
-        console.log(maxDt);
     },
 
     render: function(dt) {
         const ctx = this.app.layer.context;
         ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 4;
         ctx.fillRect(0,0,this.app.width, this.app.height);
 
-        ctx.save();
+        ctx.save();        
+
+        ctx.translate(this.app.width/2, this.app.height/2);
+        ctx.scale(this.data.scale, this.data.scale);
 
         const {x, y} = this.data.camera.position;
+        ctx.translate(x + Math.random() * this.data.screenshake - this.data.screenshake/2, y + Math.random() * this.data.screenshake - this.data.screenshake/2);
 
-        ctx.translate(x + this.app.width/2 + Math.random() * this.data.screenshake - this.data.screenshake/2, y + this.app.height/2  + Math.random() * this.data.screenshake - this.data.screenshake/2);
+        ctx.beginPath();
+        ctx.arc(0, 0, drawDistance, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.clip();
 
         this.drawCorpses(ctx);
         this.drawPrize(ctx);
@@ -151,6 +163,10 @@ const Game = {
         this.drawParticles(ctx);
         this.drawPlayer(ctx);
 
+        ctx.beginPath();
+        ctx.arc(0, 0, drawDistance, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.stroke();
         ctx.restore();
     },
 
@@ -255,6 +271,7 @@ const Game = {
             this.data.prize.health += delta;
             this.data.player.food -= delta;
         }
+        this.data.player.recoil *= (1 - 5 * dt);
     },
 
     drawPlayer: function(ctx){
@@ -263,6 +280,7 @@ const Game = {
         ctx.lineWidth = 5;
 
         const {x, y} = this.data.player.position;
+        const recoil = this.data.player.recoil;        
         const radius = 20;
         const aimDist = 10;
         const aimLength = 15;
@@ -288,6 +306,7 @@ const Game = {
         ctx.stroke();
 
         ctx.rotate(this.data.player.aim);
+        ctx.translate(-recoil, 0);
 
         ctx.fillStyle = 'black';
         ctx.beginPath();
@@ -322,6 +341,7 @@ const Game = {
             this.data.bullets.push(bullet);
             this.data.bulletTimeout += this.data.bulletSpacing;
             this.data.screenshake += 1;
+            this.data.player.recoil = 4;
 
             this.data.particles.push(
                 new Particle({...spawnPos}),
@@ -349,7 +369,7 @@ const Game = {
                 new Particle({...bullet.position})
             );
         });
-        this.data.bullets = this.data.bullets.filter( bullet => bullet.age < maxAge && !bullet.hasHit);
+        this.data.bullets = this.data.bullets.filter( bullet => bullet.age < maxAge && !bullet.hasHit && vectors.length(bullet.position) < drawDistance);
     },
 
     drawBullets: function(ctx){
@@ -445,8 +465,8 @@ const Game = {
             let spec = waves[this.data.currentWave.index][this.data.currentWave.enemyIndex];
             while(typeof spec === 'object'){
                 const angle = Math.random() * Math.PI * 2;
-                const x = Math.sin(angle) * spawnDistance;
-                const y = Math.cos(angle) * spawnDistance;
+                const x = Math.cos(angle) * spawnDistance;
+                const y = Math.sin(angle) * spawnDistance;
 
                 this.data.enemies.push(new Enemy({... spec, x, y}));
 
@@ -495,6 +515,11 @@ const Game = {
                 } else if(dist < 100){
                     vectors.addInPlace(drop.movement, vectors.scale(diff, dt * 300000 / dist / dist));
                 }
+            }
+
+            const distO = vectors.length(drop.position);
+            if( distO > drawDistance ){
+                vectors.addInPlace(drop.movement, vectors.scale(drop.position, -10/distO));
             }
 
         });
