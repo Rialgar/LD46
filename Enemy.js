@@ -144,7 +144,8 @@ export default class Enemy {
     };
 
     static Small = {};
-    static Medium = {size: 15, maxHP: 2};
-    static Big = {size: 20, maxHP: 3};
+    static Medium = {size: 15, maxHP: 2, dmg: 7};
+    static Big = {size: 20, maxHP: 3, dmg: 10};
     static Boss1 = {size: 50, maxHP: 100, speed: 20, dmg: 40};
+    static Fast = {size: 15, r: 200, g:200, b: 0, speed: 200};
 }

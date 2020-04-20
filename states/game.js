@@ -12,7 +12,6 @@ const prizeEyes = [
 ]
 
 const waves = [
-    //[{...Enemy.Small, speed: 1}],
     [
         Enemy.Small, Enemy.Small, 2,
         Enemy.Small, Enemy.Small, Enemy.Small, Enemy.Small
@@ -43,7 +42,46 @@ const waves = [
         Enemy.Small, Enemy.Small, 2,
         Enemy.Small, Enemy.Small, 2,
         Enemy.Small, Enemy.Small
-    ]
+    ],
+    [
+        5, Enemy.Fast, Enemy.Fast, 2,
+        Enemy.Fast, Enemy.Fast, 2,
+        Enemy.Fast, Enemy.Fast, Enemy.Fast, Enemy.Fast, Enemy.Small, Enemy.Small, 2,
+        Enemy.Fast, Enemy.Fast, Enemy.Fast, Enemy.Fast, Enemy.Small, Enemy.Small, 2,
+        Enemy.Fast, Enemy.Fast, Enemy.Fast, Enemy.Fast, Enemy.Small, Enemy.Small, 2,
+        Enemy.Fast, Enemy.Fast, Enemy.Fast, Enemy.Fast
+    ],
+    [
+        Enemy.Fast, Enemy.Fast, Enemy.Fast, Enemy.Small, Enemy.Small, 2,
+        Enemy.Fast, Enemy.Fast, Enemy.Fast, Enemy.Medium, Enemy.Medium, 2,
+        Enemy.Fast, Enemy.Fast, Enemy.Small, Enemy.Small, Enemy.Small, 2,
+        Enemy.Big, Enemy.Big, 2,
+        Enemy.Fast, Enemy.Fast, Enemy.Fast, Enemy.Fast, Enemy.Fast, 2,
+        Enemy.Fast, Enemy.Fast, Enemy.Fast, Enemy.Fast, Enemy.Fast
+    ],
+    [
+        Enemy.Boss1, Enemy.Fast, 2,
+        Enemy.Fast, 2,
+        Enemy.Fast, 2,
+        Enemy.Fast, 2,
+        Enemy.Fast, 2,
+        Enemy.Fast, 2,
+        Enemy.Fast, 2,
+        Enemy.Fast, 2,
+        Enemy.Fast, 2,
+        Enemy.Fast, 2,
+        Enemy.Fast, Enemy.Fast, 2,
+        Enemy.Fast, Enemy.Fast, 2,
+        Enemy.Fast, Enemy.Fast, Enemy.Fast, 2,
+        Enemy.Fast, Enemy.Fast, Enemy.Fast, 2,
+        Enemy.Fast, Enemy.Fast, Enemy.Fast, 2,
+        Enemy.Fast, Enemy.Fast, Enemy.Fast, 2,
+        Enemy.Fast, Enemy.Fast, Enemy.Fast, 2,
+        Enemy.Fast, Enemy.Fast, Enemy.Fast, 2,
+        Enemy.Fast, Enemy.Fast, Enemy.Fast, 2,
+        Enemy.Fast, Enemy.Fast, Enemy.Fast, 2
+    ],
+
 ];
 const spawnDistance = 1000;
 const drawDistance = 400;
@@ -96,7 +134,8 @@ const Game = {
             screenshake: 0,
             damageShake: 0,
             scale: 1,
-            lose: false
+            lose: false,
+            mute: false
         }
 
         window.__debug = {game: this};
@@ -191,6 +230,9 @@ const Game = {
     keydown: function(data) {
         if(data.key === "enter"){
             this.app.help();
+        } else if(data.key === "m"){
+            this.data.mute = !this.data.mute;
+            console.log(this.data.mute);
         }
     },
     keyup: function(data) { },
@@ -370,7 +412,7 @@ const Game = {
                 new Particle({...spawnPos})
             )
 
-            if(!sound){
+            if(!sound && !this.data.mute){
                 this.app.sound.play('shoot_s');
                 sound = true;
             }
@@ -393,7 +435,7 @@ const Game = {
                 new Particle({...bullet.position}),
                 new Particle({...bullet.position})
             );
-            if(!sound){
+            if(!sound && !this.data.mute){
                 this.app.playSound('hit_s');
                 sound = true;
             }
@@ -507,7 +549,9 @@ const Game = {
                 new Particle({...baseParticle, size: 5+Math.random()*10})
             )
         }
-        this.app.playSound('bigBoom_s');
+        if(!this.data.mute){
+            this.app.playSound('bigBoom_s');
+        }
     },
 
     updateEnemies: function(dt){
@@ -535,16 +579,18 @@ const Game = {
             this.data.screenshake += enemy.size/2 + enemy.dmgDealt * 5;
             this.data.damageShake += enemy.dmgDealt * 2;
 
-            if(enemy.dmgDealt > 0 && !dmgSound) {
-                this.app.playSound("hit2_s");
-                dmgSound = true;
-            } else if(enemy.dmgDealt === 0) {
-                if(enemy.size < 40 && !boomSound) {
-                    this.app.playSound("boom_s");
-                    boomSound = true;
-                } else if(enemy.size >= 40 && !bigBoomSound) {
-                    this.app.playSound("bigBoom_s");
-                    bigBoomSound = true;
+            if(!this.data.mute){
+                if(enemy.dmgDealt > 0 && !dmgSound) {
+                    this.app.playSound("hit2_s");
+                    dmgSound = true;
+                } else if(enemy.dmgDealt === 0) {
+                    if(enemy.size < 40 && !boomSound) {
+                        this.app.playSound("boom_s");
+                        boomSound = true;
+                    } else if(enemy.size >= 40 && !bigBoomSound) {
+                        this.app.playSound("bigBoom_s");
+                        bigBoomSound = true;
+                    }
                 }
             }
         });
@@ -568,8 +614,8 @@ const Game = {
             let spec = waves[this.data.currentWave.index][this.data.currentWave.enemyIndex];
             while(typeof spec === 'object'){
                 const angle = Math.random() * Math.PI * 2;
-                const x = Math.cos(angle) * spawnDistance;
-                const y = Math.sin(angle) * spawnDistance;
+                const x = Math.cos(angle) * (spawnDistance + Math.random()*40-20 );
+                const y = Math.sin(angle) * (spawnDistance + Math.random()*40-20 );
 
                 this.data.enemies.push(new Enemy({... spec, x, y}));
 
