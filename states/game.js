@@ -313,8 +313,15 @@ const Game = {
     checkMousePos: function() {
         if(!this.data.usingGamePad && this.data.usingKeyBoard){
             let {x, y} = this.app.mouse;
-            x -= Math.floor(this.app.width/2) + this.data.camera.position.x + this.data.player.position.x;
-            y -= Math.floor(this.app.height/2) + this.data.camera.position.y + this.data.player.position.y;
+            
+            x -= Math.floor(this.app.width/2);
+            x /= this.data.scale;
+            x -= this.data.camera.position.x + this.data.player.position.x;
+
+            y -= Math.floor(this.app.height/2);
+            y /= this.data.scale;
+            y -= this.data.camera.position.y + this.data.player.position.y;
+
             this.data.player.aim = Math.atan2(y, x);
         }
     },
